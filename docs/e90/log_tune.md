@@ -25,6 +25,8 @@ Do **not** splice log bus 0 and bus 1 (collisions: `0x1D6`, `0x2B2`, `0x398`). P
 
 Not pack-limited 100 kW (−2.1 at 30 m/s). Neighborhood / torque-limited. Highway regen may be stronger. **0 % pedal still means Tesla unpressed.** Planner clip stays **−1.5**.
 
+The numbers below are **plant observations**, not a controller. Pedal % is not a fixed a(v,SOC). OP long uses LongControl **I-term on (aTarget − aEgo)** plus a monotonic 0–100 % scale. Re-log after changing regen only to sanity-check that 0 % is still “max regen available”.
+
 **PedalIn vs accel** (max pedal in this log = 35 %):
 
 | PedalIn % | median a | median v |
