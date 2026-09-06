@@ -11,6 +11,7 @@ Write one file per workstream. Do not edit another agent's file.
 | `car_notes.md` | Car brand |
 | `mads_notes.md` | MADS |
 | `longitudinal.md` | Long research |
+| `log_tune.md` | Accel/pedal/0x1A0 from neighborhood SavvyCAN log |
 | `gateway_vcu.md` | Gateway / VCU research |
 | `e8x_reference.md` | E8x steal-vs-ignore |
 | `/docs/can_map.md` | CAN map / Phase 1 checklist |

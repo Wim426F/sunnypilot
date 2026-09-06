@@ -450,8 +450,8 @@ Cabana: `tools/cabana` on a route, filters `199,200,201,206,196,404,558,559,107`
 | 3 | brake_pressed without DME? | VCU [BMW_E90.cpp](https://github.com/Wim426F/Stm32-vcu/blob/master/src/BMW_E90.cpp) `SendAbsDscMessages(din_brake)` → **0x0A8** 8 bytes, ~10 ms. Byte 7 **`0x64` = pressed, `0x04` = released**. Park brake **0x3FE** byte0 == 2. | `carstate` + panda: `brake_pressed = (0x0A8 dat[7] == 0x64)`. Do not use 0x19E / 0x168. |
 | 4 | Stalk $540 vs $544? | **Normal CC / VO540.** Speed up/down on stalk. | Flag `NORMAL_CRUISE_CONTROL`. Parse 0x194 `plus1` `minus1` `resume` `cancel` `cancel_lever_up`. plus5/minus5 optional. **Never spoof stalk.** |
 | 5 | 0x22E free? | **Yes. Servo installed and ready.** | Phase 4 is hardware-ready. TX 0x22E / RX 0x22F on can2. |
-| 6 | a_regen(v), a_max(v)? | **Unknown. Assumptions below, measure Phase 5.** | Use conservative clips until logs exist. |
-| 7 | Harness? | **Single can2** to panda CAN0. Servo + pedal + VCU + forwarded BMW PT all on that bus. | One `CanBus.pt = 0`. No isolated servo bus unless cabana shows errors. |
+| 6 | a_regen(v), a_max(v)? | Neighborhood log (`smalldrivearoundtheblock.csv`): foot-off regen **~−0.4 m/s²** at 15–55 km/h (not 100 kW). Coast **~8 %** pedal. **+1.5 m/s² ≈ 30 %** pedal. Highway regen/full pedal still FLAG MEASURE. | Clip stays **+1.5 / −1.5**. Map in `CarControllerParams.ACCEL_TO_PEDAL_BP`. |
+| 7 | Harness? | **One panda CAN.** Panda CAN0 = SavvyCAN **bus 0** = gateway CAN2 / VCU vehicle / BMW PT after GW (wheels, SAS, stalk, `0x0A8`, gear). **Do not** splice Tesla/PCS (log bus 1): collisions `0x1D6`/`0x2B2`/`0x398`. Pedal `0x199`/`0x200` and servo `0x22E`/`0x22F` are **moved onto bus 0** (human). | `CanBus.pt = 0`. Three DBC parsers, one hardware bus. |
 
 **Accel assumptions (1570 kg, ~980 DU, gauge ±100 / +200 kW) — FLAG MEASURE:**
 

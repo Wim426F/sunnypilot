@@ -10,7 +10,7 @@ Lateral = StepperServoCAN on the column (0x22E TX / 0x22F RX).
 Longitudinal = Wim pedal-interceptor (`CRUISE_Gas` 0x200). **No friction-brake actuator.**
 Decel = Tesla one-pedal regen only (0 % interceptor output). Driver always covers the brake.
 
-Panda **CAN0 = can2_powertrain** (one bus). Servo + pedal + VCU + forwarded BMW PT all live there.
+Panda **CAN0 = SavvyCAN bus 0** (gateway CAN2 / VCU vehicle / BMW PT after the gateway). One hardware bus. Pedal interceptor and servo are moved onto that bus. Tesla/PCS (log bus 1) is **not** on panda — do not splice (ID collisions).
 
 ## Hard safety rules
 
