@@ -19,7 +19,7 @@ Panda **CAN0 = SavvyCAN bus 0** (gateway CAN2 / VCU vehicle / BMW PT after the g
 - **Do not use `SAFETY_TESLA` or `SAFETY_ALLOUTPUT` on the road.** Custom `SAFETY_BMW` = cereal `SafetyModel.bmw` = **37**.
 - **Do not copy Toyota interceptor payload.** Same IDs 0x200/0x201, **different layout**. Toyota 0x200 is 6 bytes; Wim is **4 bytes**. Toyota `crc8_pedal` iterates **backwards**; Wim CRC iterates **forwards** over bytes 0..2. Do not call `create_gas_interceptor_command`.
 - **Do not copy BMW-E8x cruise-stalk actuation.** No DCC. Long = interceptor only.
-- **Do not use 0x1A0 for vEgo.** Gateway clamps it to ≥ 10 km/h. Speed = `Wheel_RL/RR` on 0xCE.
+- **vEgo** = 0xCE mean of FL, FR, RL, RR. **aEgo** = 0x1A0 AccY (0.025 m/s²). Do not use 0x1A0 VehicleSpeed (gateway ≥ 10 km/h). Do not use AccX.
 - **Do not use e9x `EngineAndBrake` 0x168 / 0x19E for brake.** Live 0x0A8 is VCU `SendAbsDscMessages`: byte7 `0x64` pressed, `0x04` released.
 - **Do not enable stop-and-go / `minEnableSpeed = -1`.** v1 long: enable ≥ 30 km/h, drop below 25 km/h. Accel clip **+1.5 / −1.5 m/s²**.
 - **Do not reuse `longitudinal_interceptor_checks()`.** It treats byte1 as gas. Wim byte1 is enable magic `0xA5`.
@@ -35,9 +35,9 @@ Panda **CAN0 = SavvyCAN bus 0** (gateway CAN2 / VCU vehicle / BMW PT after the g
 | 2 | Counter, **low nibble**, must increment |
 | 3 | CRC8 poly **0xD5**, init **0xFF**, over bytes 0..2, **forward** |
 
-Semantics: `out = max(bmw_pedal, can_gas)` unless cut. CAN cannot reduce below the human pedal. 0 % = Tesla unpressed = regen.
+Semantics: `out = max(bmw_pedal, can_gas)` unless cut. CAN cannot reduce below the human pedal. **0 % = Tesla home = max regen available now.** Reducing pedal toward home increases regen.
 
-When long not active: **stop sending** 0x200 (timeout → passthrough). Never send enable without `controls_allowed`.
+Engage: hold `PedalOutPct`, then slew (down 25 %/s, up 50 %/s). When long not active: **stop sending** 0x200 immediately (timeout → passthrough → max regen if foot off). Never send enable without `controls_allowed`.
 
 ## 0x22E `STEERING_COMMAND`
 

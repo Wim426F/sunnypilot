@@ -307,7 +307,7 @@ Each phase has **exit criteria**. Do not start the next phase without them.
 ### Phase 3 — carstate + interface (still no actuation)
 
 - [ ] `carstate.py` parsers (PT DBC + powertrain DBC + ocelot):
-  - vEgo from `Wheel_RL/RR` average, 0.0625 km/h → m/s. Kalman as stock.
+  - vEgo from 0xCE mean of FL, FR, RL, RR (0.0625 km/h → m/s). aEgo from 0x1A0 AccY (0.025 m/s²). Not 0x1A0 speed.
   - standstill: vEgo < 0.3 m/s (will work; 0x1A0 will not).
   - steeringAngleDeg from 0xC4; steeringTorque from 0x22F.
   - gear from 0x3FD Direction.

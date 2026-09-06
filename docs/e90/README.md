@@ -10,7 +10,8 @@ Write one file per workstream. Do not edit another agent's file.
 | `safety_notes.md` | Safety |
 | `car_notes.md` | Car brand |
 | `mads_notes.md` | MADS |
-| `longitudinal.md` | Long research |
+| `long_control.md` | Agreed long controller (Option A) |
+| `longitudinal.md` | Interceptor protocol research |
 | `log_tune.md` | Accel/pedal/0x1A0 from neighborhood SavvyCAN log |
 | `gateway_vcu.md` | Gateway / VCU research |
 | `e8x_reference.md` | E8x steal-vs-ignore |
