@@ -53,4 +53,16 @@ Engage: `gas_pct` initialized to `PedalOutPct` (0x199). Then slew toward `map(a_
 
 Disable (`longActive` false, speed drop below 25 km/h, cancel): **stop TX immediately**. No slew. Firmware passthrough. Foot off → home → max regen.
 
+## Alerts
+
+`regenLimited` (sunnypilot `OnroadEventSP`): warning only, does not disengage.
+
+Trigger: `longActive`, `a_cmd ≤ ACCEL_MIN + 0.05`, interceptor command `gas ≤ 2 %`, held **0.5 s**.
+
+HUD: “Take Control” / “Regen at limit — cover brake”, same class as stock `steerSaturated`.
+
+Meaning: pedal is at home; AccY cannot meet `aTarget`. Driver must use the hydraulic brake.
+
+Steering limit: stock `steerSaturated` (“Turn Exceeds Steering Limit”) is unchanged.
+
 0x200: byte0 GasReq 0–255, byte1 `0xA5`, byte2 counter nibble, byte3 CRC8 poly 0xD5 init 0xFF forward over bytes 0–2. Never TX 0x194 or 0x201.

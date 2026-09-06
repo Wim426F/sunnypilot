@@ -193,6 +193,14 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.WARNING: NoEntryAlert("Pedal Pressed")
   },
 
+  EventNameSP.regenLimited: {
+    ET.WARNING: Alert(
+      "Take Control",
+      "Regen at limit — cover brake",
+      AlertStatus.userPrompt, AlertSize.mid,
+      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.promptRepeat, 2.),
+  },
+
   EventNameSP.laneTurnLeft: {
     ET.WARNING: Alert(
       "Turning Left",

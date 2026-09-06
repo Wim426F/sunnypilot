@@ -33,6 +33,7 @@ from openpilot.sunnypilot.selfdrive.car.cruise_helpers import CruiseHelper
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.controller import IntelligentCruiseButtonManagement
 from openpilot.sunnypilot.selfdrive.selfdrived.button_state_tracker import ButtonStateTracker
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
+from opendbc.car.bmw.values import CarControllerParams as BMWLongParams
 
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
@@ -151,6 +152,7 @@ class SelfdriveD(CruiseHelper):
     self.recalibrating_seen = False
     self.dm_lockout_set = False
     self.dm_uncertain_alerted = False
+    self.regen_limited_count = 0
     self.state_machine = StateMachine()
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
@@ -487,6 +489,22 @@ class SelfdriveD(CruiseHelper):
       # TODO: lac.saturated includes speed and other checks, should be pulled out
       if undershooting and turning and lac.saturated:
         self.events.add(EventName.steerSaturated)
+
+    # BMW interceptor: a_cmd at ACCEL_MIN and pedal already at home (0 %).
+    # Cannot regen more. Warning only; does not disengage.
+    EventNameSP = custom.OnroadEventSP.EventName
+    if (self.CP.brand == "bmw" and self.CP.openpilotLongitudinalControl
+        and self.sm['carControl'].longActive):
+      a_cmd = self.sm['carOutput'].actuatorsOutput.accel
+      gas = self.sm['carOutput'].actuatorsOutput.gas
+      if a_cmd <= BMWLongParams.ACCEL_MIN + 0.05 and gas <= 0.02:
+        self.regen_limited_count += 1
+      else:
+        self.regen_limited_count = 0
+      if self.regen_limited_count > int(0.5 / DT_CTRL):
+        self.events_sp.add(EventNameSP.regenLimited)
+    else:
+      self.regen_limited_count = 0
 
     # Check for FCW
     stock_long_is_braking = self.enabled and not self.CP.openpilotLongitudinalControl and CS.aEgo < -1.25

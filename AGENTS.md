@@ -47,6 +47,7 @@ Engage: hold `PedalOutPct`, then slew (down 25 %/s, up 50 %/s). When long not ac
 
 - Default daily: **MADS lat-only**. Remain-active on brake. Long opt-in later.
 - Long: interceptor gas/regen only, vEgo ≥ 30 km/h, no full stop.
+- `regenLimited` alert: `a_cmd` at −1.5 m/s² and pedal ≤ 2 % for 0.5 s. Warning only. Cover brake.
 
 ## Layout
 
