@@ -36,9 +36,11 @@ Monotonic FF (not an inverted plant):
 |---|---|
 | −1.5 | 0 |
 | 0 | 10 |
-| +1.5 | 100 |
+| +1.5 | **40** (`PEDAL_MAX_PCT`) |
 
-I-term moves `a_cmd` when SOC/regen/power change the gain. Saturated 0 % = cannot regen more.
+**Hard cap 40 %** (raw 102/255). I-term cannot wind to 100 % because AccY lags `aTarget`. Neighborhood log: ~30 % ≈ +1.5 m/s². Panda rejects `GasReq > 102` even if Python is wrong. Raise `PEDAL_MAX_PCT` and `BMW_GAS_MAX_RAW` together if highway needs more; never 100 %.
+
+Saturated 0 % = cannot regen more. Saturated 40 % = will not press more throttle.
 
 ## Pedal command
 
