@@ -21,6 +21,12 @@ class MadsSteeringModeOnBrake:
   DISENGAGE = 2
 
 
+def is_bmw_remain_active_brand(brand: str) -> bool:
+  # E90 EV: no friction-brake actuator. Daily MADS is lat-only, remain-active on brake.
+  # Has a cruise stalk (0x194) — not a MADS_NO_ACC_MAIN_BUTTON platform.
+  return brand == "bmw"
+
+
 def get_mads_limited_brands(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params) -> bool:
   if CP.brand == 'rivian':
     return True
@@ -37,6 +43,9 @@ def read_steering_mode_param(CP: structs.CarParams, CP_SP: structs.CarParamsSP, 
   if get_mads_limited_brands(CP, CP_SP, params):
     return MadsSteeringModeOnBrake.DISENGAGE
 
+  if is_bmw_remain_active_brand(CP.brand):
+    return MadsSteeringModeOnBrake.REMAIN_ACTIVE
+
   return params.get("MadsSteeringMode", return_default=True)
 
 
@@ -46,6 +55,10 @@ def set_alternative_experience(CP: structs.CarParams, CP_SP: structs.CarParamsSP
 
   if enabled:
     CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
+
+    # BMW: never MADS_DISENGAGE_LATERAL_ON_BRAKE / PAUSE. Remain-active is the product default.
+    if is_bmw_remain_active_brand(CP.brand):
+      return
 
     if steering_mode == MadsSteeringModeOnBrake.DISENGAGE:
       CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MADS_DISENGAGE_LATERAL_ON_BRAKE
@@ -70,6 +83,9 @@ def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, p
   if mads_partial_support:
     params.put("MadsSteeringMode", 2, block=True)
     params.put_bool("MadsUnifiedEngagementMode", True, block=True)
+
+  if is_bmw_remain_active_brand(CP.brand):
+    params.put("MadsSteeringMode", MadsSteeringModeOnBrake.REMAIN_ACTIVE, block=True)
 
   # no ACC MAIN button for these brands
   if CP.brand in MADS_NO_ACC_MAIN_BUTTON:

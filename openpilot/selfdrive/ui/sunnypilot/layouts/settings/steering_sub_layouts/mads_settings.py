@@ -9,7 +9,7 @@ import pyray as rl
 
 from opendbc.sunnypilot.car.tesla.values import MadsScreenButtonType, TeslaFlagsSP
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake
+from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, is_bmw_remain_active_brand
 from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.network import NavButton
@@ -32,6 +32,7 @@ STATUS_CHECK_COMPATIBILITY = tr("Start the vehicle to check vehicle compatibilit
 DEFAULT_TO_OFF = tr("This feature defaults to OFF, and does not allow selection due to vehicle limitations.")
 DEFAULT_TO_ON = tr("This feature defaults to ON, and does not allow selection due to vehicle limitations.")
 STATUS_DISENGAGE_ONLY = tr("This platform only supports Disengage mode due to vehicle limitations.")
+STATUS_REMAIN_ACTIVE_ONLY = tr("This platform remains active on brake (regen only — cover brake).")
 
 
 class MadsSettingsLayout(Widget):
@@ -84,7 +85,7 @@ class MadsSettingsLayout(Widget):
     self._scroller.show_event()
 
   @staticmethod
-  def _mads_limited_settings() -> bool:
+  def _current_brand() -> str:
     brand = ""
     if ui_state.is_offroad():
       bundle = ui_state.params.get("CarPlatformBundle")
@@ -92,6 +93,11 @@ class MadsSettingsLayout(Widget):
         brand = bundle.get("brand", "")
     if not brand:
       brand = ui_state.CP.brand if ui_state.CP is not None else ""
+    return brand
+
+  @staticmethod
+  def _mads_limited_settings() -> bool:
+    brand = MadsSettingsLayout._current_brand()
 
     if brand == "rivian":
       return True
@@ -129,6 +135,19 @@ class MadsSettingsLayout(Widget):
       self._steering_mode.set_description(STATUS_DISENGAGE_ONLY)
       self._steering_mode.action_item.set_selected_button(MadsSteeringModeOnBrake.DISENGAGE)
       self._steering_mode.action_item.set_enabled_buttons({MadsSteeringModeOnBrake.DISENGAGE})
+    elif is_bmw_remain_active_brand(self._current_brand()):
+      ui_state.params.put("MadsSteeringMode", MadsSteeringModeOnBrake.REMAIN_ACTIVE)
+
+      self._main_cruise_toggle.action_item.set_enabled(True)
+      self._main_cruise_toggle.set_description(MADS_MAIN_CRUISE_BASE_DESC)
+
+      self._unified_engagement_toggle.action_item.set_enabled(True)
+      self._unified_engagement_toggle.set_description(MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC)
+
+      self._steering_mode.action_item.set_enabled(True)
+      self._steering_mode.set_description(STATUS_REMAIN_ACTIVE_ONLY)
+      self._steering_mode.action_item.set_selected_button(MadsSteeringModeOnBrake.REMAIN_ACTIVE)
+      self._steering_mode.action_item.set_enabled_buttons({MadsSteeringModeOnBrake.REMAIN_ACTIVE})
     else:
       self._main_cruise_toggle.action_item.set_enabled(True)
       self._main_cruise_toggle.set_description(MADS_MAIN_CRUISE_BASE_DESC)

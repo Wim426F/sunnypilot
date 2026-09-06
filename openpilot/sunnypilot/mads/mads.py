@@ -47,6 +47,9 @@ class ModularAssistiveDrivingSystem:
         self.allow_always = True
     if self.CP.brand == "tesla":
       self.allow_always = True
+    if self.CP.brand == "bmw":
+      # No stock ACC/DCC. Lat must engage from the cruise stalk without pcm cruise.
+      self.allow_always = True
 
     if self.CP.brand in MADS_NO_ACC_MAIN_BUTTON:
       self.no_main_cruise = True
@@ -171,6 +174,9 @@ class ModularAssistiveDrivingSystem:
       if be.type == ButtonType.cancel:
         if not self.selfdrive.enabled and self.selfdrive.enabled_prev:
           self.events_sp.add(EventNameSP.manualLongitudinalRequired)
+        elif self.CP.brand == "bmw" and be.pressed and self.enabled and not self.selfdrive.enabled:
+          # 0x194 cancel / cancel_lever: MAIN-off analog, lat only
+          self.events_sp.add(EventNameSP.lkasDisable)
       if be.type == ButtonType.lkas and be.pressed and (CS.cruiseState.available or self.allow_always):
         if self.enabled:
           if self.selfdrive.enabled:
@@ -178,6 +184,10 @@ class ModularAssistiveDrivingSystem:
           else:
             self.events_sp.add(EventNameSP.lkasDisable)
         else:
+          self.events_sp.add(EventNameSP.lkasEnable)
+      if self.CP.brand == "bmw" and be.type == ButtonType.resumeCruise and be.pressed:
+        # 0x194 resume: MAIN-on analog, lat only (set-speed when already enabled)
+        if not self.enabled and (CS.cruiseState.available or self.allow_always):
           self.events_sp.add(EventNameSP.lkasEnable)
 
     if not CS.cruiseState.available and not self.no_main_cruise:

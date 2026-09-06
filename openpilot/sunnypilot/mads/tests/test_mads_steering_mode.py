@@ -11,7 +11,10 @@ from openpilot.cereal import log, custom
 from opendbc.car import structs
 from openpilot.selfdrive.selfdrived.events import Events
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
-from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, read_steering_mode_param
+from opendbc.safety import ALTERNATIVE_EXPERIENCE
+from openpilot.sunnypilot.mads.helpers import (MadsSteeringModeOnBrake, MADS_NO_ACC_MAIN_BUTTON,
+                                               read_steering_mode_param, set_alternative_experience,
+                                               set_car_specific_params)
 from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
 from opendbc.sunnypilot.car.tesla.values import MadsScreenButtonType, TeslaFlagsSP
 from openpilot.common.test import OpenpilotTestCase
@@ -20,6 +23,7 @@ State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 EventName = log.OnroadEvent.EventName
 EventNameSP = custom.OnroadEventSP.EventName
 SafetyModel = structs.CarParams.SafetyModel
+ButtonType = structs.CarState.ButtonEvent.Type
 
 
 def make_car_state(brake_pressed=False, regen_braking=False, standstill=False, v_ego=0.0):
@@ -45,14 +49,14 @@ def make_params_mock(mocker, values):
   return params
 
 
-def make_mads(mocker, steering_mode):
+def make_mads(mocker, steering_mode, brand="hyundai", main_cruise_allowed=False):
   sd = mocker.MagicMock()
   sd.CP = structs.CarParams()
-  sd.CP.brand = "hyundai"
+  sd.CP.brand = brand
   sd.CP_SP = structs.CarParamsSP()
   sd.params = mocker.MagicMock()
   sd.params.get_bool = mocker.MagicMock(side_effect=lambda k: {
-    "Mads": True, "MadsMainCruiseAllowed": False,
+    "Mads": True, "MadsMainCruiseAllowed": main_cruise_allowed,
     "DisengageOnAccelerator": True, "MadsUnifiedEngagementMode": False,
   }.get(k, False))
   sd.params.get = mocker.MagicMock(return_value=steering_mode)
@@ -259,3 +263,99 @@ class TestBrandSteeringModeRestrictions(OpenpilotTestCase):
     params = mocker.MagicMock()
     params.get = mocker.MagicMock(return_value=MadsSteeringModeOnBrake.REMAIN_ACTIVE)
     assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.REMAIN_ACTIVE
+
+  def test_bmw_forced_to_remain_active(self, mocker):
+    CP = structs.CarParams()
+    CP.brand = "bmw"
+    CP_SP = structs.CarParamsSP()
+    params = mocker.MagicMock()
+    params.get = mocker.MagicMock(return_value=MadsSteeringModeOnBrake.DISENGAGE)
+    assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.REMAIN_ACTIVE
+    params.get.assert_not_called()
+
+  def test_bmw_not_in_no_acc_main_button(self):
+    assert "bmw" not in MADS_NO_ACC_MAIN_BUTTON
+
+  def test_bmw_alternative_experience_remain_active(self, mocker):
+    CP = structs.CarParams()
+    CP.brand = "bmw"
+    CP.alternativeExperience = 0
+    CP_SP = structs.CarParamsSP()
+    params = mocker.MagicMock()
+    params.get_bool = mocker.MagicMock(return_value=True)
+    params.get = mocker.MagicMock(return_value=MadsSteeringModeOnBrake.DISENGAGE)
+    set_alternative_experience(CP, CP_SP, params)
+    assert CP.alternativeExperience & ALTERNATIVE_EXPERIENCE.ENABLE_MADS
+    assert not (CP.alternativeExperience & ALTERNATIVE_EXPERIENCE.MADS_DISENGAGE_LATERAL_ON_BRAKE)
+    assert not (CP.alternativeExperience & ALTERNATIVE_EXPERIENCE.MADS_PAUSE_LATERAL_ON_BRAKE)
+
+  def test_bmw_car_specific_params_remain_active_keeps_main(self, mocker):
+    CP = structs.CarParams()
+    CP.brand = "bmw"
+    CP_SP = structs.CarParamsSP()
+    params = mocker.MagicMock()
+    set_car_specific_params(CP, CP_SP, params)
+    params.put.assert_any_call("MadsSteeringMode", MadsSteeringModeOnBrake.REMAIN_ACTIVE, block=True)
+    params.remove.assert_not_called()
+
+
+# bmw stalk MAIN analog
+
+class TestBmwMadsStalk(OpenpilotTestCase):
+  def test_allow_always_and_keeps_main_cruise(self, mocker):
+    mads, _ = make_mads(mocker, MadsSteeringModeOnBrake.REMAIN_ACTIVE, brand="bmw")
+    assert mads.allow_always is True
+    assert mads.no_main_cruise is False
+
+  def test_resume_enables_lat(self, mocker):
+    mads, sd = make_mads(mocker, MadsSteeringModeOnBrake.REMAIN_ACTIVE, brand="bmw")
+    mads.state_machine.state = State.disabled
+    mads.enabled = False
+    cs = make_car_state()
+    cs.buttonEvents = [structs.CarState.ButtonEvent(pressed=True, type=ButtonType.resumeCruise)]
+    mads.update_events(cs)
+    assert sd.events_sp.has(EventNameSP.lkasEnable)
+
+  def test_cancel_lever_disables_lat_when_long_off(self, mocker):
+    mads, sd = make_mads(mocker, MadsSteeringModeOnBrake.REMAIN_ACTIVE, brand="bmw")
+    mads.state_machine.state = State.enabled
+    mads.enabled = True
+    sd.enabled = False
+    sd.enabled_prev = False
+    cs = make_car_state()
+    cs.buttonEvents = [structs.CarState.ButtonEvent(pressed=True, type=ButtonType.cancel)]
+    mads.update_events(cs)
+    assert sd.events_sp.has(EventNameSP.lkasDisable)
+
+  def test_cancel_keeps_lat_when_long_just_disengaged(self, mocker):
+    mads, sd = make_mads(mocker, MadsSteeringModeOnBrake.REMAIN_ACTIVE, brand="bmw")
+    mads.state_machine.state = State.enabled
+    mads.enabled = True
+    sd.enabled = False
+    sd.enabled_prev = True
+    cs = make_car_state()
+    cs.buttonEvents = [structs.CarState.ButtonEvent(pressed=True, type=ButtonType.cancel)]
+    mads.update_events(cs)
+    assert sd.events_sp.has(EventNameSP.manualLongitudinalRequired)
+    assert not sd.events_sp.has(EventNameSP.lkasDisable)
+
+  def test_main_available_rising_enables_lat(self, mocker):
+    mads, sd = make_mads(mocker, MadsSteeringModeOnBrake.REMAIN_ACTIVE, brand="bmw",
+                         main_cruise_allowed=True)
+    mads.state_machine.state = State.disabled
+    mads.enabled = False
+    sd.CS_prev = make_car_state()
+    sd.CS_prev.cruiseState.available = False
+    cs = make_car_state()
+    cs.cruiseState.available = True
+    mads.update_events(cs)
+    assert sd.events_sp.has(EventNameSP.lkasEnable)
+
+  def test_brake_remain_active(self, mocker):
+    mads, sd = make_mads(mocker, MadsSteeringModeOnBrake.REMAIN_ACTIVE, brand="bmw")
+    mads.state_machine.state = State.enabled
+    mads.enabled = True
+    mads.active = True
+    sd.events.add(EventName.pedalPressed)
+    run_frames(mads, sd, make_car_state(brake_pressed=True, v_ego=10.0))
+    assert mads.state_machine.state == State.enabled

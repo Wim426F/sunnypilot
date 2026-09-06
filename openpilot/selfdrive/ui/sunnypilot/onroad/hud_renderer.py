@@ -18,6 +18,7 @@ from openpilot.selfdrive.ui.sunnypilot.onroad.circular_alerts import CircularAle
 from openpilot.selfdrive.ui.sunnypilot.onroad.speed_renderer import SpeedRenderer
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.selfdrive.ui.onroad.hud_renderer import HudRenderer, UI_CONFIG, FONT_SIZES, COLORS, CRUISE_DISABLED_CHAR
+from openpilot.selfdrive.ui.sunnypilot.onroad.bmw_regen_hint import draw_bmw_regen_only_hint
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -130,6 +131,7 @@ class HudRendererSP(HudRenderer):
 
   def _render(self, rect: rl.Rectangle) -> None:
     super()._render(rect)
+    draw_bmw_regen_only_hint(self._font_medium, rect, 340)
 
     if ui_state.torque_bar:
       torque_rect = rect

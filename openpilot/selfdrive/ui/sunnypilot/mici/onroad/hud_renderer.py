@@ -8,6 +8,7 @@ import pyray as rl
 
 from openpilot.selfdrive.ui.mici.onroad.hud_renderer import HudRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.blind_spot_indicators import BlindSpotIndicators
+from openpilot.selfdrive.ui.sunnypilot.onroad.bmw_regen_hint import draw_bmw_regen_only_hint
 
 
 class HudRendererSP(HudRenderer):
@@ -21,6 +22,7 @@ class HudRendererSP(HudRenderer):
 
   def _render(self, rect: rl.Rectangle) -> None:
     super()._render(rect)
+    draw_bmw_regen_only_hint(self._font_medium, rect, rect.y + 16, font_size=28)
     self.blind_spot_indicators.render(rect)
 
   def _has_blind_spot_detected(self) -> bool:
