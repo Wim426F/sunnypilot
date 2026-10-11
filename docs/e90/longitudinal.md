@@ -273,7 +273,7 @@ At speed \(v\) (m/s), rough \(a \approx P / (m v)\). **Do not claim these below 
 | \(P_\mathrm{dis,max}\) | **200 kW** (gauge +200) | \(a_\mathrm{max} \approx 200\,\mathrm{kW}/(1570\times 30) \approx \mathbf{4.25\,m/s^2}\) | **+1.5 m/s²** |
 | \(P_\mathrm{regen,max}\) | **100 kW** (gauge ±100) | \(a_\mathrm{regen} \approx \mathbf{-2.12\,m/s^2}\) | **−1.5 m/s²** |
 | `gas_coast` | Pedal % for \(a \approx 0\) (one-pedal: 0 % is **not** coast) | **unknown** | FLAG MEASURE |
-| jerk | ISO 15622-ish | — | **±2.5 m/s³** (§0) until logs |
+| smoothness | pedal %/s, this car | — | **down 25 / up 50 %/s** (`long_control.md`). Not ISO m/s³. |
 
 Placeholder plant curves (replace from logs):
 
@@ -401,7 +401,7 @@ Panda v1 for 0x200 (safety agent; research only here):
 - Reject unless `get_longitudinal_allowed()` (never enable without `controls_allowed`; gas_pressed blocks long).
 - Reject bad CRC (forward D5/FF over 0..2 vs `data[3]`).
 - Reject frozen counter nibble (`data[2] & 0xF`).
-- `data[0]` is gas 0..255; no extra max needed beyond 255. Rate-limit optional (accel/jerk live in carcontroller clips).
+- `data[0]` is gas; panda hard cap `BMW_GAS_MAX_RAW` 102 (40 %). Pedal %/s (down 25, up 50) is Python ride-quality for this car, not a panda check.
 - **Do not** call `longitudinal_interceptor_checks()`.
 - **Do not** TX-check 0x201. **Do not** use Toyota/Honda 0x201 RX as user gas.
 - RX 0x199 @ ~10 Hz; missing > 200 ms → drop long TX.

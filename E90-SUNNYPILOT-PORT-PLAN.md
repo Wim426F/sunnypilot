@@ -21,7 +21,7 @@ This is **not** a stock Model 3 openpilot port. Tesla OP talks to Autopilot/EPS 
 | **Do not use `SAFETY_ALLOUTPUT` on the road.** Bench/cabana only, `#ifdef ALLOW_DEBUG`. | comma policy + your feet. |
 | **Panda `controls_allowed` for long must clear on: brake press, cancel, interceptor timeout, CRC fail, driver gas override (policy), steer fault.** Lateral (MADS) may remain if panda lat flag set — **only after** dedicated safety tests. | |
 | **comma.ai / sunnypilot safety policy:** no “keep long through brake”, no auto-reengage long, no DM nerf. Custom safety mode stays **private fork**. Do not PR interceptor+stepper as if it were stock ACC. | |
-| **ISO 15622-ish jerk:** start `accel` clip **+1.5 / −1.5 m/s²**, jerk ±2.5 m/s³ until logs prove Tesla DU mapping. Tesla stock OP uses +2.0 / −3.48 m/s² — **too much decel to claim** without brakes. | |
+| **Accel clip +1.5 / −1.5 m/s².** Tesla stock OP +2.0 / −3.48 is **too much decel** without brakes. Smoothness is **this car’s pedal %/s** (down 25, up 50 in `CarControllerParams`), not ISO m/s³ jerk. | |
 | **RDW:** this is an aftermarket L2 experiment. Driver is the system. | |
 
 **Operating modes (product):**

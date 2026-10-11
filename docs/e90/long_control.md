@@ -42,18 +42,24 @@ Monotonic FF (not an inverted plant):
 
 Saturated 0 % = cannot regen more. Saturated 40 % = will not press more throttle.
 
-## Pedal command
+## Pedal command (this car’s smoothness)
 
 Control loop 100 Hz. TX 0x200 at 50 Hz.
 
-| Constant | Value | Reason |
-|---|---|---|
-| `PEDAL_MAX_DOWN_PCT_S` | 25 %/s | Toward home (more regen). 100 %→0 % in 4 s while tracking. Prevents a single-frame step to max regen. |
-| `PEDAL_MAX_UP_PCT_S` | 50 %/s | Away from home. |
+`a_cmd` is **not** rate-limited. Spec §0 ISO-ish ±2.5 m/s³ jerk was a starting idea; it is **not** in the loop. Ride quality is **Tesla pedal %/s** in `CarControllerParams` for this E90 EV. Not ISO 15622. Not panda. Retune here; do not invent a second limiter.
 
-Engage: `gas_pct` initialized to `PedalOutPct` (0x199). Then slew toward `map(a_cmd)`.
+| Constant | Value | This car |
+|---|---|---|
+| `PEDAL_MAX_DOWN_PCT_S` | 25 %/s | Toward home (more regen). 40 %→0 % in 1.6 s. |
+| `PEDAL_MAX_UP_PCT_S` | 50 %/s | Away from home (press). 0 %→40 % in 0.8 s. |
+
+Asymmetric on purpose: slower into regen than out of it.
+
+Engage: `gas_pct` = `PedalOutPct` (0x199), then slew toward `map(a_cmd)`.
 
 Disable (`longActive` false, speed drop below 25 km/h, cancel): **stop TX immediately**. No slew. Firmware passthrough. Foot off → home → max regen.
+
+Panda does **not** enforce %/s. Panda only rejects `GasReq > 102`.
 
 ## Alerts
 

@@ -37,7 +37,7 @@ Panda **CAN0 = SavvyCAN bus 0** (gateway CAN2 / VCU vehicle / BMW PT after the g
 
 Semantics: `out = max(bmw_pedal, can_gas)` unless cut. CAN cannot reduce below the human pedal. **0 % = Tesla home = max regen available now.** Reducing pedal toward home increases regen.
 
-Engage: hold `PedalOutPct`, then slew (down 25 %/s, up 50 %/s). When long not active: **stop sending** 0x200 immediately (timeout → passthrough → max regen if foot off). Never send enable without `controls_allowed`.
+Engage: hold `PedalOutPct`, then slew. Pedal %/s is **this car’s ride-quality** (`CarControllerParams`: down 25, up 50). Not ISO jerk. Not panda. When long not active: **stop sending** 0x200 immediately (timeout → passthrough → max regen if foot off). Never send enable without `controls_allowed`.
 
 ## 0x22E `STEERING_COMMAND`
 
